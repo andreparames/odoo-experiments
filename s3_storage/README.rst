@@ -19,7 +19,7 @@ Installation
 
 To install this module, you need to:
 
-#. Install the `minio` python library
+#. Install the ``minio`` python library
 
 Configuration
 =============

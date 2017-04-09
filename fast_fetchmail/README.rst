@@ -17,7 +17,7 @@ Installation
 
 To install this module, you need to:
 
-#. Install the `recordclass` python library
+#. Install the ``recordclass`` python library
 
 Configuration
 =============
@@ -37,7 +37,7 @@ Why select() and not epoll()
 ----------------------------
 
 Since the number of servers is generally low, the performance drawbacks of
-select() are minimal, so it was chosen for its superior platform
+``select()`` are minimal, so it was chosen for its superior platform
 compatibility.
 
 Bug Tracker

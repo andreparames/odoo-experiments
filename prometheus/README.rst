@@ -18,12 +18,12 @@ Installation
 
 To install this module, you need to:
 
-#. Install the `prometheus_client` python library
+#. Install the ``prometheus_client`` python library
 
 Configuration
 =============
 
-After you install the module, metrics will be published at `/serverstatus`.
+After you install the module, metrics will be published at ``/serverstatus``.
 Just point your Prometheus server at that URL to start collecting.
 
 Bug Tracker
