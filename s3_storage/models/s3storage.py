@@ -96,7 +96,7 @@ class S3Attachment(models.Model):
     @api.model
     def _file_delete(self, fname):
         if self._storage() != 's3':
-            return super(S3Attachment, self)._file_delete()
+            return super(S3Attachment, self)._file_delete(fname)
         client, bucket = self._get_storage_client()
 
         self.env.cr.execute("""
