@@ -55,10 +55,11 @@ class S3Attachment(models.Model):
     @api.model
     def _get_storage_client(self):
         config = self.env['ir.config_parameter'].sudo()
+        secure = bool(config.get_param('s3_attachment_secure', True))
         client = Minio(config.get_param('s3_attachment_endpoint'),
                        access_key=config.get_param('s3_attachment_access_key'),
                        secret_key=config.get_param('s3_attachment_secret_key'),
-                       secure=True)
+                       secure=secure)
         bucket = config.get_param('s3_attachment_bucket')
         return client, bucket
 
@@ -85,7 +86,7 @@ class S3Attachment(models.Model):
             return super(S3Attachment, self)._file_write(value, checksum)
         client, bucket = self._get_storage_client()
         bin_value = value.decode('base64')
-        fname, _ = self._get_path(bin_value)
+        fname, _ = self._get_path(bin_value, checksum)
         try:
             client.put_object(
                 bucket, fname, StringIO(bin_value), len(bin_value))
@@ -99,11 +100,8 @@ class S3Attachment(models.Model):
             return super(S3Attachment, self)._file_delete(fname)
         client, bucket = self._get_storage_client()
 
-        self.env.cr.execute("""
-        SELECT COUNT(*) FROM ir_attachment WHERE store_fname = %s""", (fname,))
-        fnames = [r[0] for r in self.env.cr.fetchall()]
         try:
-            errors = client.remove_objects(bucket, fnames)
+            errors = client.remove_object(bucket, fname)
             for error in errors:
                 LOGGER.info("_file_delete (s3) removing %s: %s - %s",
                             error.object_name,
@@ -111,5 +109,5 @@ class S3Attachment(models.Model):
                             error.error_message)
         except ResponseError as errn:
             LOGGER.info("_file_gc (s3)", exc_info=True)
-        LOGGER.info("filestore  %d removed", len(fnames))
+        LOGGER.info("filestore  %d removed", fname)
         return None
