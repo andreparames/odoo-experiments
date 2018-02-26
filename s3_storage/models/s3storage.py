@@ -103,13 +103,8 @@ class S3Attachment(models.Model):
         client, bucket = self._get_storage_client()
 
         try:
-            errors = client.remove_object(bucket, fname)
-            for error in errors:
-                LOGGER.info("_file_delete (s3) removing %s: %s - %s",
-                            error.object_name,
-                            error.error_code,
-                            error.error_message)
+            client.remove_object(bucket, fname)
         except ResponseError as errn:
             LOGGER.info("_file_gc (s3)", exc_info=True)
-        LOGGER.info("filestore  %d removed", fname)
+        LOGGER.info("filestore  %s removed", fname)
         return None
