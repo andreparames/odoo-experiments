@@ -67,6 +67,8 @@ class S3Attachment(models.Model):
 
     @api.model
     def _file_read(self, fname, bin_size=False):
+        if self._storage() != 's3':
+            return super(S3Attachment, self)._file_read(fname, bin_size)
         client, bucket = self._get_storage_client()
         r = ''
         try:
@@ -82,6 +84,8 @@ class S3Attachment(models.Model):
 
     @api.model
     def _file_write(self, value):
+        if self._storage() != 's3':
+            return super(S3Attachment, self)._file_write(value)
         client, bucket = self._get_storage_client()
         bin_value = value.decode('base64')
         fname, _ = self._get_path(bin_value)
@@ -92,10 +96,10 @@ class S3Attachment(models.Model):
             _logger.info("_file_write (s3) writing %s", fname, exc_info=True)
         return fname
 
-    @api.model
+   @api.model
     def _file_gc(self):
-        if self._storage() != 'file':
-            return
+        if self._storage() != 's3':
+            return super(S3Attachment, self)._file_gc()
         client, bucket = self._get_storage_client()
 
         # See comment in the original implementation
@@ -123,8 +127,10 @@ class S3Attachment(models.Model):
         cr.commit()
         _logger.info("filestore gc %d checked, %d removed",
                      len(fnames), len(fnames)-len(kept))
- 
+
     @api.model
     def _mark_for_gc(self, fname):
+        if self._storage() != 's3':
+            super(S3Attachment, self)._mark_for_gc(fname)
         self._cr.execute("INSERT INTO s3_garbage VALUES (%s) "
-                   "ON CONFLICT DO NOTHING")
+                         "ON CONFLICT DO NOTHING")
