@@ -26,7 +26,7 @@ try:
     from minio import Minio
     from minio.error import ResponseError
 except ImportError:
-    _logger.error('minio is required')
+    _logger.error('minio package is required to store attachments on S3')
 
 
 class S3AttachmentsToDelete(models.Model):
