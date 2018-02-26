@@ -20,7 +20,7 @@
     'name': 'S3 Storage Backend',
     'version': '9.0.0.0.1',
     'category': 'base',
-    'author': 'André Paramés Pereira',
+    'author': 'André Paramés Pereira,Hugo Rodrigues',
     'license': 'LGPL-3',
     'depends': [
         'base',

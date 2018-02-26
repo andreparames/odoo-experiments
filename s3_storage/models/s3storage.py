@@ -1,19 +1,19 @@
 # coding: utf-8
 ##############################################################################
-#    This file is part of the fast_fetchmail module.
+#    This file is part of the s3_storage module.
 #
-#    fast_fetchmail is free software: you can redistribute it and/or modify
+#    s3_storage is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published
 #    by the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
 #
-#    fast_fetchmail is distributed in the hope that it will be useful,
+#    s3_storage is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU Lesser General Public License for more details.
 #
 #    You should have received a copy of the GNU Lesser General Public License
-#    along with fast_fetchmail. If not, see <http://www.gnu.org/licenses/>.
+#    along with s3_storage. If not, see <http://www.gnu.org/licenses/>.
 ##############################################################################
 from cStringIO import StringIO
 import logging
