@@ -67,8 +67,8 @@ class S3Attachment(models.Model):
         return client, bucket
 
     @api.model
-    def _fs_path(self, fname):
-        return os.path.join(self._filestore, fname)
+    def _s3_path(self, fname):
+        return os.path.join(self.env.cr.dbname, fname)
 
     @api.model
     def _file_read(self, fname, bin_size=False):
@@ -76,16 +76,16 @@ class S3Attachment(models.Model):
             return super(S3Attachment, self)._file_read(fname, bin_size)
         client, bucket = self._get_storage_client()
         res = ''
-        fname = self._fs_path(fname)
+        s3name = self._s3_path(fname)
         try:
             if bin_size:
-                info = client.stat_object(bucket, fname)
+                info = client.stat_object(bucket, s3name)
                 res = human_size(info.size)
             else:
-                response = client.get_object(bucket, fname)
+                response = client.get_object(bucket, s3name)
                 res = response.read().encode('base64')
         except ResponseError as errn:
-            LOGGER.info("_read_file (s3) reading %s", fname, exc_info=True)
+            LOGGER.info("_read_file (s3) reading %s", s3name, exc_info=True)
         return res
 
     @api.model
@@ -95,12 +95,12 @@ class S3Attachment(models.Model):
         client, bucket = self._get_storage_client()
         bin_value = value.decode('base64')
         fname, _ = self._get_path(bin_value, checksum)
-        fname = self._fs_path(fname)
+        s3name = self._s3_path(fname)
         try:
             client.put_object(
-                bucket, fname, StringIO(bin_value), len(bin_value))
+                bucket, s3name, StringIO(bin_value), len(bin_value))
         except ResponseError as errn:
-            LOGGER.info("_file_write (s3) writing %s", fname, exc_info=True)
+            LOGGER.info("_file_write (s3) writing %s", s3name, exc_info=True)
         return fname
 
     @api.model
@@ -109,10 +109,10 @@ class S3Attachment(models.Model):
             return super(S3Attachment, self)._file_delete(fname)
         client, bucket = self._get_storage_client()
 
-        fname = self._fs_path(fname)
+        s3name = self._s3_path(fname)
         try:
-            client.remove_object(bucket, fname)
+            client.remove_object(bucket, s3name)
         except ResponseError as errn:
             LOGGER.info("_file_gc (s3)", exc_info=True)
-        LOGGER.info("filestore  %s removed", fname)
+        LOGGER.info("filestore  %s removed", s3name)
         return None
