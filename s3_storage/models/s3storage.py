@@ -116,3 +116,19 @@ class S3Attachment(models.Model):
             LOGGER.info("_file_gc (s3)", exc_info=True)
         LOGGER.info("filestore  %s removed", s3name)
         return None
+
+    @api.model
+    def move_to_s3(self):
+        """Move all attachments to s3"""
+        if self._storage() != 's3':
+            return False
+        config = self.env['ir.config_parameter'].sudo()
+
+        # Set all attachments to fs
+        config.set_param('ir_attachment.location', 'file')
+        self.force_storage()
+        config.set_param('ir_attachment.location', 's3')
+
+        for attach in self.browse([]):
+            attach.write({'datas': attach.datas})
+        return True
