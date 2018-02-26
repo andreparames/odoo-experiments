@@ -73,6 +73,8 @@ values:
 
 #. s3_attachment_bucket: Name of the bucket
 
+#. s3_attachment_secure: Enable (or not) secure connection. True if not set
+
 
 Bug Tracker
 ===========
