@@ -38,6 +38,23 @@ class S3AttachmentsToDelete(models.Model):
 class S3Attachment(models.Model):
     _inherit = 'ir.attachment'
 
+    def _storage(self):
+        """
+        Get the storage type.
+        In case of missing S3 configurations, the storage defaults to file
+        """
+        res = super(S3Attachment, self)._storage()
+        if res == 's3':
+            params = ['s3_attachment_endpoint', 's3_attachment_access_key',
+                      's3_attachment_secret_key', 's3_attachment_bucket']
+            config = self._env['ir.config_parameter'].sudo()
+            for param in params:
+                if not config.get_param(param, False):
+                    res = 'file'
+                    _logger.error('Missing S3 configuration: %s', param)
+                    break
+        return res
+
     @api.model
     def _get_storage_client(self):
         config = self.env['ir.config_parameter'].sudo()
