@@ -29,12 +29,6 @@ except ImportError:
     _logger.error('minio package is required to store attachments on S3')
 
 
-class S3AttachmentsToDelete(models.Model):
-    _name = 's3.garbage'
-
-    fname = fields.Text()
-
-
 class S3Attachment(models.Model):
     _inherit = 'ir.attachment'
 
@@ -97,19 +91,14 @@ class S3Attachment(models.Model):
         return fname
 
    @api.model
-    def _file_gc(self):
+    def _file_delete(self):
         if self._storage() != 's3':
-            return super(S3Attachment, self)._file_gc()
+            return super(S3Attachment, self)._file_delete()
         client, bucket = self._get_storage_client()
 
-        # See comment in the original implementation
-        cr = self._cr
-        cr.commit()
-        self._cr.execute("LOCK ir_attachment IN SHARE MODE")
 
-        self._cr.execute("SELECT fname FROM s3_garbage")
+        self._cr.execute("SELECT COUNT(*) FROM ir_attachment WHERE store_fname = %s", (fname,))
         fnames = [r[0] for r in cr.fetchall()]
-        kept = set()
         try:
             errors = client.remove_objects(bucket, fnames)
             for error in errors:
@@ -117,20 +106,7 @@ class S3Attachment(models.Model):
                              error.object_name,
                              error.error_code,
                              error.error_message)
-                kept.add(error.object_name)
-            # mark as removed
-            self._cr.execute(
-                "DELETE FROM s3_garbage WHERE fname NOT IN %s",
-                (tuple(kept),))
         except ResponseError as e:
             _logger.info("_file_gc (s3)", exc_info=True)
-        cr.commit()
         _logger.info("filestore gc %d checked, %d removed",
                      len(fnames), len(fnames)-len(kept))
-
-    @api.model
-    def _mark_for_gc(self, fname):
-        if self._storage() != 's3':
-            super(S3Attachment, self)._mark_for_gc(fname)
-        self._cr.execute("INSERT INTO s3_garbage VALUES (%s) "
-                         "ON CONFLICT DO NOTHING")
