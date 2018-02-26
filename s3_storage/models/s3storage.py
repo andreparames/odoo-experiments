@@ -1,3 +1,4 @@
+"""ir.attachment extension"""
 # coding: utf-8
 ##############################################################################
 #    This file is part of the s3_storage module.
@@ -21,15 +22,16 @@ import logging
 from openerp import api, models, fields
 from openerp.tools import human_size
 
-_logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 try:
     from minio import Minio
     from minio.error import ResponseError
 except ImportError:
-    _logger.error('minio package is required to store attachments on S3')
+    LOGGER.error('minio package is required to store attachments on S3')
 
 
 class S3Attachment(models.Model):
+    """ir.attachment extension"""
     _inherit = 'ir.attachment'
 
     def _storage(self):
@@ -45,7 +47,7 @@ class S3Attachment(models.Model):
             for param in params:
                 if not config.get_param(param, False):
                     res = 'file'
-                    _logger.error('Missing S3 configuration: %s', param)
+                    LOGGER.error('Missing S3 configuration: %s', param)
                     break
         return res
 
@@ -64,17 +66,17 @@ class S3Attachment(models.Model):
         if self._storage() != 's3':
             return super(S3Attachment, self)._file_read(fname, bin_size)
         client, bucket = self._get_storage_client()
-        r = ''
+        res = ''
         try:
             if bin_size:
                 info = client.stat_object(bucket, fname)
-                r = human_size(info.size)
+                res = human_size(info.size)
             else:
                 response = client.get_object(bucket, fname)
-                r = response.read().encode('base64')
-        except ResponseError as e:
-            _logger.info("_read_file (s3) reading %s", fname, exc_info=True)
-        return r
+                res = response.read().encode('base64')
+        except ResponseError as errn:
+            LOGGER.info("_read_file (s3) reading %s", fname, exc_info=True)
+        return res
 
     @api.model
     def _file_write(self, value):
@@ -86,27 +88,27 @@ class S3Attachment(models.Model):
         try:
             client.put_object(
                 bucket, fname, StringIO(bin_value), len(bin_value))
-        except ResponseError as e:
-            _logger.info("_file_write (s3) writing %s", fname, exc_info=True)
+        except ResponseError as errn:
+            LOGGER.info("_file_write (s3) writing %s", fname, exc_info=True)
         return fname
 
-   @api.model
-    def _file_delete(self):
+    @api.model
+    def _file_delete(self, fname):
         if self._storage() != 's3':
             return super(S3Attachment, self)._file_delete()
         client, bucket = self._get_storage_client()
 
-
-        self._cr.execute("SELECT COUNT(*) FROM ir_attachment WHERE store_fname = %s", (fname,))
-        fnames = [r[0] for r in cr.fetchall()]
+        self.env.cr.execute("""
+        SELECT COUNT(*) FROM ir_attachment WHERE store_fname = %s""", (fname,))
+        fnames = [r[0] for r in self.env.cr.fetchall()]
         try:
             errors = client.remove_objects(bucket, fnames)
             for error in errors:
-                _logger.info("_file_gc (s3) removing %s: %s - %s",
-                             error.object_name,
-                             error.error_code,
-                             error.error_message)
-        except ResponseError as e:
-            _logger.info("_file_gc (s3)", exc_info=True)
-        _logger.info("filestore gc %d checked, %d removed",
-                     len(fnames), len(fnames)-len(kept))
+                LOGGER.info("_file_gc (s3) removing %s: %s - %s",
+                            error.object_name,
+                            error.error_code,
+                            error.error_message)
+        except ResponseError as errn:
+            LOGGER.info("_file_gc (s3)", exc_info=True)
+        LOGGER.info("filestore gc %d removed", len(fnames))
+        return None
