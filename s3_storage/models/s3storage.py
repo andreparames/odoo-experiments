@@ -34,6 +34,7 @@ class S3Attachment(models.Model):
     """ir.attachment extension"""
     _inherit = 'ir.attachment'
 
+    @api.model
     def _storage(self):
         """
         Get the storage type.
@@ -79,9 +80,9 @@ class S3Attachment(models.Model):
         return res
 
     @api.model
-    def _file_write(self, value):
+    def _file_write(self, value, checksum):
         if self._storage() != 's3':
-            return super(S3Attachment, self)._file_write(value)
+            return super(S3Attachment, self)._file_write(value, checksum)
         client, bucket = self._get_storage_client()
         bin_value = value.decode('base64')
         fname, _ = self._get_path(bin_value)
