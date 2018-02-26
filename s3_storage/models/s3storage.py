@@ -44,7 +44,7 @@ class S3Attachment(models.Model):
         if res == 's3':
             params = ['s3_attachment_endpoint', 's3_attachment_access_key',
                       's3_attachment_secret_key', 's3_attachment_bucket']
-            config = self._env['ir.config_parameter'].sudo()
+            config = self.env['ir.config_parameter'].sudo()
             for param in params:
                 if not config.get_param(param, False):
                     res = 'file'
