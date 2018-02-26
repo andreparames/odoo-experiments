@@ -18,6 +18,7 @@
 ##############################################################################
 from cStringIO import StringIO
 import logging
+import os
 
 from openerp import api, models, fields
 from openerp.tools import human_size
@@ -66,11 +67,16 @@ class S3Attachment(models.Model):
         return client, bucket
 
     @api.model
+    def _fs_path(self, fname):
+        return os.path.join(self._filestore, fname)
+
+    @api.model
     def _file_read(self, fname, bin_size=False):
         if self._storage() != 's3':
             return super(S3Attachment, self)._file_read(fname, bin_size)
         client, bucket = self._get_storage_client()
         res = ''
+        fname = self._fs_path(fname)
         try:
             if bin_size:
                 info = client.stat_object(bucket, fname)
@@ -89,6 +95,7 @@ class S3Attachment(models.Model):
         client, bucket = self._get_storage_client()
         bin_value = value.decode('base64')
         fname, _ = self._get_path(bin_value, checksum)
+        fname = self._fs_path(fname)
         try:
             client.put_object(
                 bucket, fname, StringIO(bin_value), len(bin_value))
@@ -102,6 +109,7 @@ class S3Attachment(models.Model):
             return super(S3Attachment, self)._file_delete(fname)
         client, bucket = self._get_storage_client()
 
+        fname = self._fs_path(fname)
         try:
             client.remove_object(bucket, fname)
         except ResponseError as errn:
