@@ -55,7 +55,9 @@ class S3Attachment(models.Model):
     @api.model
     def _get_storage_client(self):
         config = self.env['ir.config_parameter'].sudo()
-        secure = bool(config.get_param('s3_attachment_secure', True))
+        secure = config.get_param('s3_attachment_secure', True)
+        if isinstance(secure, (str, unicode)):
+            secure = True if secure.lower() in ['1', 'true', 't'] else False
         client = Minio(config.get_param('s3_attachment_endpoint'),
                        access_key=config.get_param('s3_attachment_access_key'),
                        secret_key=config.get_param('s3_attachment_secret_key'),
