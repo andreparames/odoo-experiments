@@ -26,7 +26,7 @@ from openerp.tools import human_size
 LOGGER = logging.getLogger(__name__)
 try:
     from minio import Minio
-    from minio.error import ResponseError
+    from minio.error import ResponseError, NoSuchKey
 except ImportError:
     LOGGER.error('minio package is required to store attachments on S3')
 
@@ -118,17 +118,44 @@ class S3Attachment(models.Model):
         return None
 
     @api.model
-    def move_to_s3(self):
+    def move_to_s3(self, delete_fs=False):
         """Move all attachments to s3"""
         if self._storage() != 's3':
             return False
         config = self.env['ir.config_parameter'].sudo()
+        client, bucket = self._get_storage_client()
+        operation = 'moved' if delete_fs else 'copied'
 
         # Set all attachments to fs
         config.set_param('ir_attachment.location', 'file')
         self.force_storage()
         config.set_param('ir_attachment.location', 's3')
 
-        for attach in self.browse([]):
-            attach.write({'datas': attach.datas})
+        # Must bypass ORM since it will fail because the files aren't on S3
+        self.env.cr.execute("SELECT store_fname FROM ir_attachment")
+        attachs = self.env.cr.fetchall()
+        for attach in attachs:
+            fname = attach[0]
+            s3name = self._s3_path(fname)
+            fspath = self._full_path(fname)
+            # Check if file exists on s3
+            try:
+                client.stat_object(bucket, s3name)
+                LOGGER.info('move_to_s3: %s already on s3', fname)
+                continue
+            except NoSuchKey:  # Ignore error when file doesn't exists
+                pass
+            file_stat = os.stat(fspath)
+            with open(fspath, 'rb') as file_data:
+                client.put_object(bucket, s3name, file_data, file_stat.st_size)
+                if delete_fs:
+                    try:
+                        os.unlink(fspath)
+                    except OSError:
+                        LOGGER.info('move_to_s3:  could not unlink %s',
+                                    fname, exec_info=True)
+                    except IOError:
+                        LOGGER.info('move_to_s3:  could not unlink %s',
+                                    fname, exec_info=True)
+                LOGGER.info('move_to_s3: %s %s to s3', operation, fname)
         return True

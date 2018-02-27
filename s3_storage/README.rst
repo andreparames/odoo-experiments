@@ -76,6 +76,9 @@ values:
 #. s3_attachment_secure: Enable (or not) secure connection. True if not set
 
 
+When S3 is set, you must copy/move all ir_attachments to S3. To do it, execute
+the method _move_to_s3 in the ir.attachment model. You can do it via xmlrpc or
+shell. To delete files from the filestore, pass the argument delete_fs as True.
 Bug Tracker
 ===========
 
